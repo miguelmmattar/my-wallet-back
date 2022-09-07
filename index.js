@@ -3,6 +3,7 @@ import joi from 'joi';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
+import { v4 as uuid } from 'uuid';
 import { MongoClient, ObjectId } from 'mongodb';
 dotenv.config();
 
@@ -53,11 +54,42 @@ app.post('/sign-up', async (req, res) => {
                 encrypted_password: bcrypt.hashSync(password, 10)
             });
     
-        res.sendStatus(200);    
+        res.sendStatus(201);    
    } catch(error) {
        res.status(500).send(error.message);
    }
 });
 
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await db
+            .collection('users')
+            .findOne({ email });
+
+        if(!user && !bcrypt.compareSync(password, user.encrypted_password)) {
+            res.status(401).send('E-mail ou senha inválidos!');
+            return;
+        }
+
+        const token = uuid();
+
+        await db
+            .collection('sessions')
+            .insertOne({
+                userId: user._id,
+                token
+            });
+
+        res.status(200).send({
+            name: user.name,
+            token
+        });        
+
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+});
 
 app.listen(5000, () => console.log('Listening on port 5000'));
