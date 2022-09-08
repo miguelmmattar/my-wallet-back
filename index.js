@@ -25,7 +25,7 @@ mongoClient.connect(() => {
 app.use(cors());
 app.use(express.json());
 
-app.post('/sign-up', async (req, res) => {
+app.post('auth/sign-up', async (req, res) => {
    const { name, email, password } = req.body;
 
    try {
@@ -60,7 +60,7 @@ app.post('/sign-up', async (req, res) => {
    }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -86,6 +86,44 @@ app.post('/login', async (req, res) => {
             name: user.name,
             token
         });        
+
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.get('/painel', async (req, res) => {
+    const { authorization } = req.headers;
+    console.log(authorization)
+    const token = authorization?.replace('Bearer ', '');
+
+    try {
+        if(!token) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        const session = await db
+            .collection('sessions')
+            .findOne({ token });
+
+        if(!session) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        const user = await db
+            .collection('users')
+            .findOne({ _id: session.userId });
+
+        if(!user) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        delete user.encrypted_password;
+
+        res.send(user);
 
     } catch(error) {
         res.status(500).send(error.message);
