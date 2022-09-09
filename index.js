@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import { MongoClient, ObjectId } from 'mongodb';
+import dayjs from 'dayjs';
 dotenv.config();
 
 const app = express();
@@ -18,6 +19,12 @@ const signUpSchema = joi.object({
     confirm_password: joi.ref('password')
 });
 
+const transactionSchema = joi.object({
+    value: joi.number().positive().precision(2).required(),
+    description: joi.string().empty().required(),
+    type: joi.valid('entrada', 'saida').required()
+});
+
 mongoClient.connect(() => {
     db = mongoClient.db('my-wallet');
 });
@@ -25,7 +32,7 @@ mongoClient.connect(() => {
 app.use(cors());
 app.use(express.json());
 
-app.post('auth/sign-up', async (req, res) => {
+app.post('/auth/sign-up', async (req, res) => {
    const { name, email, password } = req.body;
 
    try {
@@ -92,9 +99,53 @@ app.post('/auth/login', async (req, res) => {
     }
 });
 
-app.get('/painel', async (req, res) => {
+app.post('/new', async (req, res) => {
+    const { value, description, type } = req.body;
     const { authorization } = req.headers;
-    console.log(authorization)
+    const token = authorization?.replace('Bearer ', '');
+
+    try {
+        const validation = transactionSchema.validate(req.body, { abortEarly: false });
+
+        if(validation.error) {
+            const errors = validation.error.details.map(detail => detail.message);
+            res.status(422).send(errors);
+            return;
+        }
+
+        if(!token) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        const session = await db
+            .collection('sessions')
+            .findOne({ token });
+
+        if(!session) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        await db
+            .collection('transactions')
+            .insertOne({
+                userId: session.userId,
+                value,
+                description,
+                type,
+                date: dayjs().format('DD/MM')
+            });
+        
+        res.sendStatus(200);
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+
+});
+
+app.get('/panel', async (req, res) => {
+    const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
 
     try {
@@ -112,19 +163,33 @@ app.get('/painel', async (req, res) => {
             return;
         }
 
-        const user = await db
-            .collection('users')
-            .findOne({ _id: session.userId });
+        const transactions = await db
+            .collection('transactions')
+            .find({ userId: session.userId })
+            .toArray();
+        
+        res.send(transactions);
 
-        if(!user) {
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.delete('/logout', async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    try {
+        if(!token) {
             res.status(401).send('Sessão expirada! Faça o login para continuar.');
             return;
         }
 
-        delete user.encrypted_password;
+        await db
+            .collection('sessions')
+            .deleteOne({ token });
 
-        res.send(user);
-
+        res.sendStatus(200);
     } catch(error) {
         res.status(500).send(error.message);
     }
