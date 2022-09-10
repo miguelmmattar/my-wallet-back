@@ -1,16 +1,13 @@
-import express, { json } from 'express';
+import express from 'express';
 import joi from 'joi';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import dayjs from 'dayjs';
-dotenv.config();
+import db from './db/db.js';
 
 const app = express();
-const mongoClient = new MongoClient(process.env.MONGO_URI);
-let db;
 
 const signUpSchema = joi.object({
     name: joi.string().empty().required(),
@@ -25,9 +22,6 @@ const transactionSchema = joi.object({
     type: joi.valid('entrada', 'saida').required()
 });
 
-mongoClient.connect(() => {
-    db = mongoClient.db('my-wallet');
-});
 
 app.use(cors());
 app.use(express.json());
