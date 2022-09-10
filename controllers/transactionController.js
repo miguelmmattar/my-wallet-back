@@ -8,7 +8,7 @@ const transactionSchema = joi.object({
     type: joi.valid('entrada', 'saida').required()
 });
 
-async function newTransaction(req, res) {
+async function add(req, res) {
     const { value, description, type } = req.body;
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
@@ -53,7 +53,7 @@ async function newTransaction(req, res) {
 
 }
 
-async function getTransactions(req, res) {
+async function get(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
 
@@ -84,7 +84,7 @@ async function getTransactions(req, res) {
     }
 }
 
-async function removeTransaction(req, res) {
+async function remove(req, res) {
     const id = req.params.transactionId;
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
@@ -106,8 +106,8 @@ async function removeTransaction(req, res) {
 }
 
 export {
-    newTransaction,
-    getTransactions,
-    removeTransaction
+    add,
+    get,
+    remove
 };
 

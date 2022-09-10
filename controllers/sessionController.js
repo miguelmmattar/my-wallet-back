@@ -1,6 +1,6 @@
 import db from '../db/db.js';
 
-async function getSession(req, res) {
+async function get(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
 
@@ -55,6 +55,6 @@ async function logout(req, res) {
 }
 
 export {
-    getSession,
+    get,
     logout
 };
