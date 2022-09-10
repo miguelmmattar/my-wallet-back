@@ -86,6 +86,7 @@ app.post('/auth/login', async (req, res) => {
             .collection('sessions')
             .insertOne({
                 userId: user._id,
+                email,
                 token
             });
 
@@ -94,6 +95,31 @@ app.post('/auth/login', async (req, res) => {
             token
         });        
 
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.get('/auth/login', async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    try {
+        if(!token) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        const session = await db
+            .collection('sessions')
+            .findOne({ token });
+
+        if(!session) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        res.send(session);
     } catch(error) {
         res.status(500).send(error.message);
     }
@@ -185,9 +211,39 @@ app.delete('/logout', async (req, res) => {
             return;
         }
 
+        const session = await db
+        .collection('sessions')
+        .find({ token });
+
+        if(!session) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
         await db
             .collection('sessions')
             .deleteOne({ token });
+
+        res.sendStatus(200);
+    } catch(error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.delete('/remove/:transactionId', async (req, res) => {
+    const id = req.params.transactionId;
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    try {
+        if(!token) {
+            res.status(401).send('Sessão expirada! Faça o login para continuar.');
+            return;
+        }
+
+        await db
+            .collection('transactions')
+            .deleteOne({ _id: ObjectId(id) });
 
         res.sendStatus(200);
     } catch(error) {
