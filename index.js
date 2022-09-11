@@ -13,9 +13,4 @@ app.use(authRouter);
 app.use(sessionRouter);
 app.use(transactionRouter);
 
-
-
-
-
-
 app.listen(5000, () => console.log('Listening on port 5000'));
