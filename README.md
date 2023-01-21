@@ -28,12 +28,13 @@ The following tools and frameworks were used in the construction of the project:
 1. Clone this repository
 2. Clone the front-end repository at https://github.com/miguelmmattar/my-wallet-front.git
 3. Follow instructions to run front-end at https://github.com/miguelmmattar/my-wallet-front.git
-4. Install dependencies
+4. Create a Mongo database called 'my-wallet'
+5. Install dependencies
 ```bash
 npm i
 ```
-5. Make sure you have Node installed on your computer
-6. Run the back-end with
+6. Make sure you have Node installed on your computer
+7. Run the back-end with
 ```bash
 node index.js
 ```
